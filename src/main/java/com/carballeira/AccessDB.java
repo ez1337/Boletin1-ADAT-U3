@@ -1,0 +1,140 @@
+package com.carballeira;
+
+import java.sql.*;
+import java.util.ArrayList;
+
+public class AccessDB {
+    final String URL = "jdbc:mysql://localhost:3307/ejerciciosboletin";
+    final String USER = "root";
+    final String PASSWORD = "";
+    Connection conn = null;
+    PreparedStatement pstmt = null;
+    DepartmentModel dept;
+
+    public void connectToDatabase(){
+        try{
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            conn = DriverManager.getConnection(URL, USER, PASSWORD);
+        } catch(ClassNotFoundException e){
+            System.err.println("Driver no encontrado: " + e.getMessage());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void insertDept(DepartmentModel dept){
+        if(dept.validDept()){
+            try{
+                conn.setAutoCommit(false);
+
+                String sql = "INSERT INTO departamentos (dept_no, dnombre) VALUES (?, ?)";
+                pstmt = conn.prepareStatement(sql);
+
+                pstmt.setInt(1, dept.getDeptNum());
+                pstmt.setString(2, dept.getDeptName());
+
+                int filasModificadas = pstmt.executeUpdate();
+
+                conn.commit();
+
+                // Mostrar el número de filas modificadas
+                System.out.println("Número de filas modificadas: " + filasModificadas);
+
+            }catch(SQLException e){
+                System.err.println("Error SQL: " + e.getMessage());
+            }finally {
+                // Cerrar la conexión y el objeto PreparedStatement
+                try {
+                    if (pstmt != null) pstmt.close();
+                    if (conn != null) conn.setAutoCommit(true); // Volver a activar el auto-commit
+                    if (conn != null) conn.close();
+                } catch (SQLException e) {
+                    System.err.println("Error al cerrar la conexión: " + e.getMessage());
+                }
+            }
+        }
+
+    }
+
+    public ArrayList<DepartmentModel> getAllDept(){
+        ArrayList<DepartmentModel> dept_list = new ArrayList<>();
+        try{
+            conn.setAutoCommit(false);
+            String sql = "SELECT dept_no, dnombre FROM departamentos";
+
+            pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            int filasModificadas = pstmt.executeUpdate();
+
+            conn.commit();
+
+            while(rs.next()){
+                int dept_num = rs.getInt("dept_no");
+                String dept_name = rs.getString("dnombre");
+                DepartmentModel dept = new DepartmentModel(dept_num,dept_name);
+                dept_list.add(dept);
+            }
+        }catch(SQLException e){
+            System.err.println("Código de error: " + e.getErrorCode() +"\n"+
+                                "SQLState: "+ e.getSQLState() + "\n" +
+                                "Mensaje: "+ e.getMessage());
+        }finally {
+            try {
+                if (pstmt != null) pstmt.close();
+                if (conn != null) conn.setAutoCommit(true); // Volver a activar el auto-commit
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                System.err.println("Error al cerrar la conexión: " + e.getMessage());
+            }
+        }
+        return dept_list;
+    }
+
+    public DepartmentModel getDept(int deptNum){
+        int dept_num = 0;
+        String dept_name = "";
+        try{
+            conn.setAutoCommit(false);
+            String sql = "SELECT dept_no, dnombre FROM departamentos WHERE dept_no = ?";
+
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, deptNum);
+            ResultSet rs = pstmt.executeQuery();
+
+            while(rs.next()){
+                dept_num = rs.getInt("dept_no");
+                dept_name = rs.getString("dnombre");
+            }
+        }catch(SQLException e){
+            System.err.println("Código de error: " + e.getErrorCode() +"\n"+
+                    "SQLState: "+ e.getSQLState() + "\n" +
+                    "Mensaje: "+ e.getMessage());
+        }finally {
+            try {
+                if (pstmt != null) pstmt.close();
+                if (conn != null) conn.setAutoCommit(true); // Volver a activar el auto-commit
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                System.err.println("Error al cerrar la conexión: " + e.getMessage());
+            }
+        }
+        return new DepartmentModel(dept_num,dept_name);
+    }
+
+    public void deleteDept(int deptNum){
+        try{
+            String sql = "DELETE FROM departamentos WHERE dept_no = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, deptNum);
+
+            int filasModificadas = pstmt.executeUpdate();
+
+            conn.commit();
+
+        }catch(SQLException e){
+            System.err.println("Código de error: " + e.getErrorCode() +"\n"+
+                    "SQLState: "+ e.getSQLState() + "\n" +
+                    "Mensaje: "+ e.getMessage());
+        }
+    }
+}
