@@ -11,6 +11,10 @@ public class AccessDB {
     PreparedStatement pstmt = null;
     DepartmentModel dept;
 
+    public AccessDB(DepartmentModel dept) {
+        this.dept = dept;
+    }
+
     public void connectToDatabase(){
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -27,11 +31,12 @@ public class AccessDB {
             try{
                 conn.setAutoCommit(false);
 
-                String sql = "INSERT INTO departamentos (dept_no, dnombre) VALUES (?, ?)";
+                String sql = "INSERT INTO departamentos (dept_no, dnombre, loc) VALUES (?, ?, ?)";
                 pstmt = conn.prepareStatement(sql);
 
                 pstmt.setInt(1, dept.getDeptNum());
                 pstmt.setString(2, dept.getDeptName());
+                pstmt.setString(3,dept.getLocation());
 
                 int filasModificadas = pstmt.executeUpdate();
 
@@ -60,18 +65,20 @@ public class AccessDB {
         ArrayList<DepartmentModel> dept_list = new ArrayList<>();
         try{
             conn.setAutoCommit(false);
-            String sql = "SELECT dept_no, dnombre FROM departamentos";
+            String sql = "SELECT dept_no, dnombre, loc FROM departamentos";
 
             pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
-            int filasModificadas = pstmt.executeUpdate();
 
             conn.commit();
 
             while(rs.next()){
                 int dept_num = rs.getInt("dept_no");
                 String dept_name = rs.getString("dnombre");
-                DepartmentModel dept = new DepartmentModel(dept_num,dept_name);
+                String dept_location = rs.getString("loc");
+                dept.setDeptNum(dept_num);
+                dept.setDeptName(dept_name);
+                dept.setLocation(dept_location);
                 dept_list.add(dept);
             }
         }catch(SQLException e){
@@ -93,9 +100,10 @@ public class AccessDB {
     public DepartmentModel getDept(int deptNum){
         int dept_num = 0;
         String dept_name = "";
+        String dept_loc = "";
         try{
             conn.setAutoCommit(false);
-            String sql = "SELECT dept_no, dnombre FROM departamentos WHERE dept_no = ?";
+            String sql = "SELECT dept_no, dnombre, loc FROM departamentos WHERE dept_no = ?";
 
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, deptNum);
@@ -104,6 +112,7 @@ public class AccessDB {
             while(rs.next()){
                 dept_num = rs.getInt("dept_no");
                 dept_name = rs.getString("dnombre");
+                dept_loc = rs.getString("loc");
             }
         }catch(SQLException e){
             System.err.println("Código de error: " + e.getErrorCode() +"\n"+
@@ -118,23 +127,59 @@ public class AccessDB {
                 System.err.println("Error al cerrar la conexión: " + e.getMessage());
             }
         }
-        return new DepartmentModel(dept_num,dept_name);
+        return new DepartmentModel(dept_num,dept_name,dept_loc);
     }
 
     public void deleteDept(int deptNum){
         try{
+            conn.setAutoCommit(false);
             String sql = "DELETE FROM departamentos WHERE dept_no = ?";
             pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, deptNum);
-
             int filasModificadas = pstmt.executeUpdate();
 
             conn.commit();
+            System.out.println("Departamento eliminado exitosamente \n"+"Filas afectadas: "+filasModificadas);
 
         }catch(SQLException e){
             System.err.println("Código de error: " + e.getErrorCode() +"\n"+
                     "SQLState: "+ e.getSQLState() + "\n" +
                     "Mensaje: "+ e.getMessage());
+        }finally {
+            try {
+                if (pstmt != null) pstmt.close();
+                if (conn != null) conn.setAutoCommit(true); // Volver a activar el auto-commit
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                System.err.println("Error al cerrar la conexión: " + e.getMessage());
+            }
+        }
+    }
+
+    public void updateDept(int deptNum, String deptLocation){
+        try{
+            conn.setAutoCommit(false);
+            String sql = "{call actualizaDept(?,?)}";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, deptNum);
+            pstmt.setString(2, deptLocation);
+            int filasModificadas = pstmt.executeUpdate();
+
+            conn.commit();
+            System.out.println("Departamento actualizado exitosamente \n"+"Filas afectadas: "+filasModificadas);
+
+        }catch(SQLException e){
+            System.err.println("Código de error: " + e.getErrorCode() +"\n"+
+                    "SQLState: "+ e.getSQLState() + "\n" +
+                    "Mensaje: "+ e.getMessage());
+        }finally {
+            try {
+                if (pstmt != null) pstmt.close();
+                if (conn != null) conn.setAutoCommit(true); // Volver a activar el auto-commit
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                System.err.println("Error al cerrar la conexión: " + e.getMessage());
+            }
         }
     }
 }

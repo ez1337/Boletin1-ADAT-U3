@@ -4,17 +4,26 @@ import java.sql.*;
 import java.util.Scanner;
 
 public class Boletin1 {
-    final static String query1 = "SELECT dept_no, dnombre FROM departamentos";
-    final String query2 = "UPDATE departamentos SET dept_no = ?, dnombre = ? WHERE dept_no = ?";
+    final static String query1 = "SELECT dept_no, dnombre, loc FROM departamentos";
 
     public static void main(String[] args) throws ClassNotFoundException {
         Scanner sc0 = new Scanner(System.in);
+        Scanner sc1 = new Scanner(System.in);
         int i = 0;
         boolean validInput;
+        DepartmentModel dept = new DepartmentModel();
+        AccessDB access = new AccessDB(dept);
 
         do {
             System.out.println("Selecciona una de las opciones: ");
-            System.out.println("1. Muestra todos los departamentos // 2. Modifica un departamento // 3. Salir");
+            System.out.println("1. Muestra todos los departamentos // " +
+                    "2. Modifica un departamento // " +
+                    "3. Lista de departamentos // " +
+                    "4. Datos de departamento especifico // " +
+                    "5. Ingresar nuevo departamento // " +
+                    "6. Eliminar departamento // " +
+                    "7. Actualizar departamento // " +
+                    "8. Salir");
 
             validInput = sc0.hasNextInt();
 
@@ -30,6 +39,36 @@ public class Boletin1 {
                         modifyEntry();
                         break;
                     case 3:
+                        access.connectToDatabase();
+                        System.out.println(access.getAllDept());
+                        break;
+                    case 4:
+                        System.out.println("Ingresa número de departamento: ");
+                        int num = sc0.nextInt();
+                        access.connectToDatabase();
+                        System.out.println(access.getDept(num).toString());
+                        break;
+                    case 5:
+                        access.connectToDatabase();
+                        access.insertDept(newDepartment());
+                        break;
+                    case 6:
+                        System.out.println("Ingresa el número de departamento a quitar de la lista");
+                        queryExe(query1);
+                        int delnum = sc0.nextInt();
+                        access.connectToDatabase();
+                        access.deleteDept(delnum);
+                        break;
+                    case 7:
+                        System.out.println("Ingresa el número de departamento a actualizar");
+                        queryExe(query1);
+                        int upnum = sc0.nextInt();
+                        System.out.println("Escribe la nueva localización del departamento");
+                        String uploc = sc1.nextLine();
+                        access.connectToDatabase();
+                        access.updateDept(upnum,uploc);
+                        break;
+                    case 8:
                         System.out.println("Goodbye!");
                         break;
                 }
@@ -37,8 +76,55 @@ public class Boletin1 {
                 System.out.println("Introduce un número válido.");
                 sc0.next();
             }
-        } while (i != 3);
+        } while (i != 8);
 
+    }
+
+    // CRUD methods
+
+    public static void queryExe(String query) throws ClassNotFoundException{
+
+        // Creación del controlador JDBC
+        Class.forName("com.mysql.cj.jdbc.Driver");
+
+        // Control de errores para el driver
+        try{
+            Class.forName("com.mysql.cj.jdbc.Driver");
+        }catch(ClassNotFoundException e){
+            System.err.println("Driver no encontrado" + e.getMessage());
+        }
+
+        // Control de errores al conectar con BBDD y ejecutar query
+        Connection conn = null;
+        ResultSet rs = null;
+        Statement stmt = null;
+        try{
+            conn = DriverManager.getConnection("jdbc:mysql://localhost:3307/ejerciciosboletin",
+                    "root",
+                    "");
+            stmt = conn.createStatement();
+            rs = stmt.executeQuery(query);
+
+            while(rs.next()){
+                int dept_num = rs.getInt("dept_no");
+                String dept_name = rs.getString("dnombre");
+                String dept_loc = rs.getString("loc");
+                System.out.println(dept_num + "\t" + dept_name + "\t" + dept_loc);
+            }
+
+        } catch(SQLException e){
+            System.err.println("Error en la base de datos" + e.getMessage());
+        } finally{
+            if(conn != null){
+                try{
+                    conn.close();
+                    rs.close();
+                    stmt.close();
+                } catch(SQLException e){
+                    System.err.println("Error al cerrar la conexión" + e.getMessage());
+                }
+            }
+        }
     }
 
     public static void modifyEntry(){
@@ -71,52 +157,6 @@ public class Boletin1 {
 
         sc.close();
         sn.close();
-    }
-
-    // CRUD methods
-
-    public static void queryExe(String query) throws ClassNotFoundException{
-
-        // Creación del controlador JDBC
-        Class.forName("com.mysql.cj.jdbc.Driver");
-
-        // Control de errores para el driver
-        try{
-            Class.forName("com.mysql.cj.jdbc.Driver");
-        }catch(ClassNotFoundException e){
-            System.err.println("Driver no encontrado" + e.getMessage());
-        }
-
-        // Control de errores al conectar con BBDD y ejecutar query
-        Connection conn = null;
-        ResultSet rs = null;
-        Statement stmt = null;
-        try{
-            conn = DriverManager.getConnection("jdbc:mysql://localhost:3307/ejerciciosboletin",
-                    "root",
-                    "");
-            stmt = conn.createStatement();
-            rs = stmt.executeQuery(query);
-
-            while(rs.next()){
-                int dept_num = rs.getInt("dept_no");
-                String dept_name = rs.getString("dnombre");
-                System.out.println(dept_num + "\t" + dept_name);
-            }
-
-        } catch(SQLException e){
-            System.err.println("Error en la base de datos" + e.getMessage());
-        } finally{
-            if(conn != null){
-                try{
-                    conn.close();
-                    rs.close();
-                    stmt.close();
-                } catch(SQLException e){
-                    System.err.println("Error al cerrar la conexión" + e.getMessage());
-                }
-            }
-        }
     }
 
     public static void updateDepartmentStmt(int deptNoExistente, int nuevoDeptNo, String nuevoDeptNombre) {
@@ -258,5 +298,20 @@ public class Boletin1 {
                 System.err.println("Error al cerrar la conexión: " + e.getMessage());
             }
         }
+    }
+
+    public static DepartmentModel newDepartment(){
+        Scanner sc = new Scanner(System.in);
+        Scanner sn = new Scanner(System.in);
+
+        System.out.println("Vas a insertar un nuevo departamento.");
+        System.out.println("Ingresa el número: ");
+        int num = sn.nextInt();
+        System.out.println("Ingresa el nombre: ");
+        String name = sc.nextLine();
+        System.out.println("Ingresa la localización: ");
+        String location = sc.nextLine();
+
+        return new DepartmentModel(num,name,location);
     }
 }
