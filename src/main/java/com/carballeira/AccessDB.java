@@ -2,6 +2,7 @@ package com.carballeira;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class AccessDB {
     final String URL = "jdbc:mysql://localhost:3307/ejerciciosboletin";
@@ -15,6 +16,9 @@ public class AccessDB {
         this.dept = dept;
     }
 
+    /**
+     * Método para establecer la conexión con la base de datos
+     */
     public void connectToDatabase(){
         try{
             Class.forName("com.mysql.cj.jdbc.Driver");
@@ -26,6 +30,10 @@ public class AccessDB {
         }
     }
 
+    /**
+     * Método para insertar un nuevo departamento. Recibe un objeto departamento por parámetro.
+     * @param dept
+     */
     public void insertDept(DepartmentModel dept){
         if(dept.validDept()){
             try{
@@ -61,6 +69,42 @@ public class AccessDB {
 
     }
 
+    public void insertNewDept(int deptNum, String deptName, String deptLoc){
+        try{
+            conn.setAutoCommit(false);
+
+            String sql = "INSERT INTO departamentos (dept_no, dnombre, loc) VALUES (?, ?, ?)";
+            pstmt = conn.prepareStatement(sql);
+
+            pstmt.setInt(1, deptNum);
+            pstmt.setString(2, deptName.toUpperCase());
+            pstmt.setString(3,deptLoc.toUpperCase());
+
+            int filasModificadas = pstmt.executeUpdate();
+
+            conn.commit();
+
+            // Mostrar el número de filas modificadas
+            System.out.println("Número de filas modificadas: " + filasModificadas);
+
+        }catch(SQLException e){
+            System.err.println("Error SQL: " + e.getMessage());
+        }finally {
+            // Cerrar la conexión y el objeto PreparedStatement
+            try {
+                if (pstmt != null) pstmt.close();
+                if (conn != null) conn.setAutoCommit(true); // Volver a activar el auto-commit
+                if (conn != null) conn.close();
+            } catch (SQLException e) {
+                System.err.println("Error al cerrar la conexión: " + e.getMessage());
+            }
+        }
+    }
+
+    /**
+     * Método que devuelve un ArrayList de todos los departamentos.
+     * @return ArrayList<DepartmentModel>
+     */
     public ArrayList<DepartmentModel> getAllDept(){
         ArrayList<DepartmentModel> dept_list = new ArrayList<>();
         try{
@@ -76,9 +120,7 @@ public class AccessDB {
                 int dept_num = rs.getInt("dept_no");
                 String dept_name = rs.getString("dnombre");
                 String dept_location = rs.getString("loc");
-                dept.setDeptNum(dept_num);
-                dept.setDeptName(dept_name);
-                dept.setLocation(dept_location);
+                DepartmentModel dept = new DepartmentModel(dept_num, dept_name, dept_location);
                 dept_list.add(dept);
             }
         }catch(SQLException e){
@@ -97,6 +139,11 @@ public class AccessDB {
         return dept_list;
     }
 
+    /**
+     * Método que devuelve un objeto departamento especificando su número.
+     * @param deptNum
+     * @return
+     */
     public DepartmentModel getDept(int deptNum){
         int dept_num = 0;
         String dept_name = "";
@@ -130,6 +177,10 @@ public class AccessDB {
         return new DepartmentModel(dept_num,dept_name,dept_loc);
     }
 
+    /**
+     * Método que elimina de la BBDD un departamennto por su número.
+     * @param deptNum
+     */
     public void deleteDept(int deptNum){
         try{
             conn.setAutoCommit(false);
@@ -156,6 +207,11 @@ public class AccessDB {
         }
     }
 
+    /**
+     * Método que actualiza la información de un departamento a partir de su número y localización
+     * @param deptNum
+     * @param deptLocation
+     */
     public void updateDept(int deptNum, String deptLocation){
         try{
             conn.setAutoCommit(false);

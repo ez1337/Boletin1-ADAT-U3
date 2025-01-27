@@ -16,13 +16,13 @@ public class Boletin1 {
 
         do {
             System.out.println("Selecciona una de las opciones: ");
-            System.out.println("1. Muestra todos los departamentos // " +
-                    "2. Modifica un departamento // " +
-                    "3. Lista de departamentos // " +
-                    "4. Datos de departamento especifico // " +
-                    "5. Ingresar nuevo departamento // " +
-                    "6. Eliminar departamento // " +
-                    "7. Actualizar departamento // " +
+            System.out.println("1. Muestra todos los departamentos (ejercicio 3.1)\n" +
+                    "2. Modifica un departamento (ejercicios 3.2, 3.3, 3.4)\n" +
+                    "3. Lista de departamentos (ejercicio 5.4)\n" +
+                    "4. Datos de departamento especifico (ejercicio 5.5)\n" +
+                    "5. Ingresar nuevo departamento (ejercicio 5.2 y 5.3)\n" +
+                    "6. Eliminar departamento (ejercicio 5.7 y 5.8)\n" +
+                    "7. Actualizar departamento (ejercicio 5.9)\n" +
                     "8. Salir");
 
             validInput = sc0.hasNextInt();
@@ -40,7 +40,9 @@ public class Boletin1 {
                         break;
                     case 3:
                         access.connectToDatabase();
-                        System.out.println(access.getAllDept());
+                        for(DepartmentModel deptmnt : access.getAllDept()){
+                            System.out.println(deptmnt.toString());
+                        }
                         break;
                     case 4:
                         System.out.println("Ingresa número de departamento: ");
@@ -49,8 +51,7 @@ public class Boletin1 {
                         System.out.println(access.getDept(num).toString());
                         break;
                     case 5:
-                        access.connectToDatabase();
-                        access.insertDept(newDepartment());
+                        ingresarNuevoDepartamento(access);
                         break;
                     case 6:
                         System.out.println("Ingresa el número de departamento a quitar de la lista");
@@ -80,7 +81,7 @@ public class Boletin1 {
 
     }
 
-    // CRUD methods
+    // Métodos CRUD ejercicio 3
 
     public static void queryExe(String query) throws ClassNotFoundException{
 
@@ -140,7 +141,7 @@ public class Boletin1 {
         System.out.println("Escribe el nuevo nombre del departamento: ");
         String depNameNew = sc.nextLine();
 
-        System.out.println("Elige el tipo de funcionalidad: 1) Statement / 2) Prepared Statement / 3) Transacción");
+        System.out.println("Elige el tipo de funcionalidad: \n 1) Statement (ejercicio 3.2) / \n 2) Prepared Statement (ejercicio 3.3)/ \n 3) Transacción (ejercicio 3.4)");
         int op = sn.nextInt();
 
         switch(op){
@@ -300,6 +301,8 @@ public class Boletin1 {
         }
     }
 
+    // Fin Métodos CRUD ejercicio 3
+
     public static DepartmentModel newDepartment(){
         Scanner sc = new Scanner(System.in);
         Scanner sn = new Scanner(System.in);
@@ -313,5 +316,31 @@ public class Boletin1 {
         String location = sc.nextLine();
 
         return new DepartmentModel(num,name,location);
+    }
+
+    public static void ingresarNuevoDepartamento(AccessDB access){
+        Scanner sc = new Scanner(System.in);
+        Scanner sn = new Scanner(System.in);
+        System.out.println("Selecciona una opción: ");
+        System.out.println("1. Ejercicio 5.2 // \n 2. Ejercicio 5.3");
+        int op = sn.nextInt();
+        switch(op){
+            case 1:
+                System.out.println("Ingresa número de departamento");
+                int deptNum = sn.nextInt();
+                System.out.println("Ingresa el nombre del departamento");
+                String deptName = sc.nextLine();
+                System.out.println("Ingresa el nombre de la localización");
+                String deptLoc = sc.nextLine();
+                access.connectToDatabase();
+                access.insertNewDept(deptNum,deptName,deptLoc);
+//                sc.close();
+//                sn.close();
+                break;
+            case 2:
+                access.connectToDatabase();
+                access.insertDept(newDepartment());
+                break;
+        }
     }
 }
